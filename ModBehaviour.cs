@@ -1,6 +1,6 @@
 ﻿using Duckov.Scenes;
 using Duckov.Modding;
-using HarmonyLib;
+//using HarmonyLib;
 using ItemStatsSystem;
 using System;
 using System.Collections;
@@ -15,7 +15,7 @@ namespace TooManyBodies
     [System.Serializable]
     public class TooManyBodiesConfig
     {
-        //这里是默认配置，没做安全所以不能删
+        //这里是默认配置，懒得做安全所以不能删
 
         //搜索半径（米）
         public float searchRadius = 15f;
@@ -268,11 +268,8 @@ namespace TooManyBodies
                 Debug.LogError($"TooManyBodies: Failed to load config from file: {e}");
             }
         }
-
-        /// <summary>
-        /// 保存配置到本地文件
-        /// Save configuration to local file
-        /// </summary>
+        
+        // 保存配置到本地文件
         private void SaveConfigToFile()
         {
             try
@@ -286,11 +283,6 @@ namespace TooManyBodies
                 Debug.LogError($"TooManyBodies: Failed to save config to file: {e}");
             }
         }
-
-        /// <summary>
-        /// 监听 ModConfig 激活事件
-        /// Listen for ModConfig activation event
-        /// </summary>
         private void OnModActivated(ModInfo info, Duckov.Modding.ModBehaviour behaviour)
         {
             if (info.name == ModConfigAPI.ModConfigName)
