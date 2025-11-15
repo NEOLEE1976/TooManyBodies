@@ -38,6 +38,9 @@ namespace TooManyBodies
         //删除动画时长
         public float destroyDelay = 0.3f;
 
+        //删除已搜索的盒子
+        public bool deleteSearchedBoxes = false;
+
 
         public string configToken = "toomanybodies_v1";
     }
@@ -116,11 +119,26 @@ namespace TooManyBodies
 
             lastCleanupTime = Time.time;
 
-            // 获取范围内的空盒子
-            List<InteractableLootbox> boxesToClean = GetEmptyBoxesInRange(
-                characterControl.transform.position,
-                config.searchRadius
-            );
+            // 获取范围内的盒子
+            List<InteractableLootbox> boxesToClean;
+            string cleanupType;
+
+            if (config.deleteSearchedBoxes)
+            {
+                boxesToClean = GetSearchedBoxesInRange(
+                    characterControl.transform.position,
+                    config.searchRadius
+                );
+                cleanupType = "已搜索的";
+            }
+            else
+            {
+                boxesToClean = GetEmptyBoxesInRange(
+                    characterControl.transform.position,
+                    config.searchRadius
+                );
+                cleanupType = "空";
+            }
 
             int destroyedCount = 0;
             foreach (var box in boxesToClean)
@@ -131,7 +149,7 @@ namespace TooManyBodies
 
             if (config.showNotifications && destroyedCount > 0)
             {
-                string message = $"清理完成！删除 {destroyedCount} 个空盒子";
+                string message = $"清理完成！删除 {destroyedCount} 个{cleanupType}盒子";
                 characterControl.PopText(message);
             }
         }
@@ -153,6 +171,32 @@ namespace TooManyBodies
 
                     if (Vector3.Distance(box.transform.position, centerPos) <= radius
                         && IsBoxEmpty(box))
+                    {
+                        result.Add(box);
+                    }
+                }
+            }
+
+            return result;
+        }
+        private List<InteractableLootbox> GetSearchedBoxesInRange(Vector3 centerPos, float radius)
+        {
+            List<InteractableLootbox> result = new List<InteractableLootbox>();
+
+            if (MultiSceneCore.Instance == null)
+                return result;
+
+            InteractableLootbox[] allBoxes = MultiSceneCore.Instance.gameObject
+                .GetComponentsInChildren<InteractableLootbox>(includeInactive: false);
+
+            if (allBoxes != null && allBoxes.Length > 0)
+            {
+                foreach (var box in allBoxes)
+                {
+                    if (box == null) continue;
+
+                    if (Vector3.Distance(box.transform.position, centerPos) <= radius
+                        && box.Looted)
                     {
                         result.Add(box);
                     }
@@ -377,6 +421,14 @@ namespace TooManyBodies
                 new Vector2(0.1f, 2f)
             );
 
+            // 删除已搜索的盒子
+            ModConfigAPI.SafeAddBoolDropdownList(
+                MOD_NAME,
+                "deleteSearchedBoxes",
+                isChinese ? "删除已搜索的盒子" : "Delete Searched Boxes",
+                config.deleteSearchedBoxes
+            );
+
             Debug.Log("TooManyBodies: ModConfig setup completed");
         }
 
@@ -400,6 +452,7 @@ namespace TooManyBodies
             config.cleanupInterval = ModConfigAPI.SafeLoad<float>(MOD_NAME, "cleanupInterval", config.cleanupInterval);
             config.playDestroyAnimation = ModConfigAPI.SafeLoad<bool>(MOD_NAME, "playDestroyAnimation", config.playDestroyAnimation);
             config.destroyDelay = ModConfigAPI.SafeLoad<float>(MOD_NAME, "destroyDelay", config.destroyDelay);
+            config.deleteSearchedBoxes = ModConfigAPI.SafeLoad<bool>(MOD_NAME, "deleteSearchedBoxes", config.deleteSearchedBoxes);
 
             string triggerKeyStr = ModConfigAPI.SafeLoad<string>(MOD_NAME, "triggerKey", config.triggerKey.ToString());
             if (System.Enum.TryParse<KeyCode>(triggerKeyStr, out KeyCode parsedKey))
